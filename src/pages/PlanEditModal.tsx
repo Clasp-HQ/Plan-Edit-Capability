@@ -1,3 +1,4 @@
+
 "use client";
 
 import React from "react";
@@ -63,18 +64,22 @@ function PlanEditModal() {
                   <TextField.Input
                     placeholder="Enter plan name"
                     value=""
-                    onChange={(event: React.ChangeEvent<HTMLInputElement>) => {}}
+                    onChange={(
+                      event: React.ChangeEvent<HTMLInputElement>
+                    ) => {}}
                   />
                 </TextField>
                 <TextField
                   className="h-auto w-full flex-none"
-                  label="Plan Type"
+                  label="Group Number"
                   helpText=""
                 >
                   <TextField.Input
-                    placeholder="Enter plan type"
+                    placeholder="Enter group number"
                     value=""
-                    onChange={(event: React.ChangeEvent<HTMLInputElement>) => {}}
+                    onChange={(
+                      event: React.ChangeEvent<HTMLInputElement>
+                    ) => {}}
                   />
                 </TextField>
                 <div className="flex w-full flex-col items-start gap-1">
@@ -87,8 +92,11 @@ function PlanEditModal() {
                         className="h-8 w-full flex-none"
                         variant="neutral-secondary"
                         iconRight={<FeatherChevronDown />}
+                        onClick={(
+                          event: React.MouseEvent<HTMLButtonElement>
+                        ) => {}}
                       >
-                        Select Line of Coverage
+                        Select Premium Type
                       </Button>
                     </SubframeCore.DropdownMenu.Trigger>
                     <SubframeCore.DropdownMenu.Portal>
@@ -99,23 +107,65 @@ function PlanEditModal() {
                         asChild={true}
                       >
                         <DropdownMenu>
-                          <DropdownMenu.DropdownItem icon={<FeatherActivity />}>Medical</DropdownMenu.DropdownItem>
-                          <DropdownMenu.DropdownItem>Dental</DropdownMenu.DropdownItem>
-                          <DropdownMenu.DropdownItem icon={<FeatherEye />}>Vision</DropdownMenu.DropdownItem>
-                          <DropdownMenu.DropdownItem>Life</DropdownMenu.DropdownItem>
-                          <DropdownMenu.DropdownItem>Accidental Death and Dismemberment</DropdownMenu.DropdownItem>
-                          <DropdownMenu.DropdownItem>Voluntary Life</DropdownMenu.DropdownItem>
-                          <DropdownMenu.DropdownItem>Voluntary Critical Illness</DropdownMenu.DropdownItem>
-                          <DropdownMenu.DropdownItem>Short Term Disability</DropdownMenu.DropdownItem>
-                          <DropdownMenu.DropdownItem>Voluntary Short Term Disability</DropdownMenu.DropdownItem>
-                          <DropdownMenu.DropdownItem>Long Term Disability</DropdownMenu.DropdownItem>
-                          <DropdownMenu.DropdownItem>Hospital Indemnity</DropdownMenu.DropdownItem>
-                          <DropdownMenu.DropdownItem>Accident</DropdownMenu.DropdownItem>
-                          <DropdownMenu.DropdownItem>Cancer</DropdownMenu.DropdownItem>
-                          <DropdownMenu.DropdownItem>HSA</DropdownMenu.DropdownItem>
-                          <DropdownMenu.DropdownItem>Healthcare FSA</DropdownMenu.DropdownItem>
-                          <DropdownMenu.DropdownItem>Limited Purpose FSA</DropdownMenu.DropdownItem>
-                          <DropdownMenu.DropdownItem>Dependent Care FSA</DropdownMenu.DropdownItem>
+                    <DropdownMenu.DropdownItem icon={<FeatherActivity />}>Medical</DropdownMenu.DropdownItem>
+                    <DropdownMenu.DropdownItem>Dental</DropdownMenu.DropdownItem>
+                    <DropdownMenu.DropdownItem icon={<FeatherEye />}>Vision</DropdownMenu.DropdownItem>
+                    <DropdownMenu.DropdownItem>Life</DropdownMenu.DropdownItem>
+                    <DropdownMenu.DropdownItem>Accidental Death and Dismemberment</DropdownMenu.DropdownItem>
+                    <DropdownMenu.DropdownItem>Voluntary Life</DropdownMenu.DropdownItem>
+                    <DropdownMenu.DropdownItem>Voluntary Critical Illness</DropdownMenu.DropdownItem>
+                    <DropdownMenu.DropdownItem>Short Term Disability</DropdownMenu.DropdownItem>
+                    <DropdownMenu.DropdownItem>Voluntary Short Term Disability</DropdownMenu.DropdownItem>
+                    <DropdownMenu.DropdownItem>Long Term Disability</DropdownMenu.DropdownItem>
+                    <DropdownMenu.DropdownItem>Hospital Indemnity</DropdownMenu.DropdownItem>
+                    <DropdownMenu.DropdownItem>Accident</DropdownMenu.DropdownItem>
+                    <DropdownMenu.DropdownItem>Cancer</DropdownMenu.DropdownItem>
+                    <DropdownMenu.DropdownItem>HSA</DropdownMenu.DropdownItem>
+                    <DropdownMenu.DropdownItem>Healthcare FSA</DropdownMenu.DropdownItem>
+                    <DropdownMenu.DropdownItem>Limited Purpose FSA</DropdownMenu.DropdownItem>
+                    <DropdownMenu.DropdownItem>Dependent Care FSA</DropdownMenu.DropdownItem>
+                  </DropdownMenu>
+                      </SubframeCore.DropdownMenu.Content>
+                    </SubframeCore.DropdownMenu.Portal>
+                  </SubframeCore.DropdownMenu.Root>
+                </div>
+                <div className="flex w-full flex-col items-start gap-1">
+                  <span className="text-caption font-caption text-default-font">
+                    Carrier
+                  </span>
+                  <SubframeCore.DropdownMenu.Root>
+                    <SubframeCore.DropdownMenu.Trigger asChild={true}>
+                      <Button
+                        className="h-8 w-full flex-none"
+                        variant="neutral-secondary"
+                        iconRight={<FeatherChevronDown />}
+                        onClick={(
+                          event: React.MouseEvent<HTMLButtonElement>
+                        ) => {}}
+                      >
+                        Select Premium Type
+                      </Button>
+                    </SubframeCore.DropdownMenu.Trigger>
+                    <SubframeCore.DropdownMenu.Portal>
+                      <SubframeCore.DropdownMenu.Content
+                        side="bottom"
+                        align="start"
+                        sideOffset={4}
+                        asChild={true}
+                      >
+                        <DropdownMenu>
+                          <DropdownMenu.DropdownItem icon={<FeatherActivity />}>
+                            Anthem
+                          </DropdownMenu.DropdownItem>
+                          <DropdownMenu.DropdownItem icon={<FeatherShield />}>
+                            Kaiser Permanente
+                          </DropdownMenu.DropdownItem>
+                          <DropdownMenu.DropdownItem icon={<FeatherGlobe />}>
+                            UnitedHealthcare
+                          </DropdownMenu.DropdownItem>
+                          <DropdownMenu.DropdownItem icon={<FeatherHome />}>
+                            Cigna
+                          </DropdownMenu.DropdownItem>
                         </DropdownMenu>
                       </SubframeCore.DropdownMenu.Content>
                     </SubframeCore.DropdownMenu.Portal>
@@ -131,6 +181,9 @@ function PlanEditModal() {
                         className="h-8 w-full flex-none"
                         variant="neutral-secondary"
                         iconRight={<FeatherChevronDown />}
+                        onClick={(
+                          event: React.MouseEvent<HTMLButtonElement>
+                        ) => {}}
                       >
                         Select Premium Type
                       </Button>
@@ -150,57 +203,6 @@ function PlanEditModal() {
                       </SubframeCore.DropdownMenu.Content>
                     </SubframeCore.DropdownMenu.Portal>
                   </SubframeCore.DropdownMenu.Root>
-                </div>
-                <div className="flex w-full flex-col items-start gap-1">
-                  <span className="text-caption font-caption text-default-font">
-                    Age Calculation Method
-                  </span>
-                  <SubframeCore.DropdownMenu.Root>
-                    <SubframeCore.DropdownMenu.Trigger asChild={true}>
-                      <Button
-                        className="h-8 w-full flex-none"
-                        variant="neutral-secondary"
-                        iconRight={<FeatherChevronDown />}
-                      >
-                        Select Age Calculation Method
-                      </Button>
-                    </SubframeCore.DropdownMenu.Trigger>
-                    <SubframeCore.DropdownMenu.Portal>
-                      <SubframeCore.DropdownMenu.Content
-                        side="bottom"
-                        align="start"
-                        sideOffset={4}
-                        asChild={true}
-                      >
-                        <DropdownMenu>
-                          <DropdownMenu.DropdownItem>Coverage Start Date</DropdownMenu.DropdownItem>
-                          <DropdownMenu.DropdownItem>Plan Start Date</DropdownMenu.DropdownItem>
-                        </DropdownMenu>
-                      </SubframeCore.DropdownMenu.Content>
-                    </SubframeCore.DropdownMenu.Portal>
-                  </SubframeCore.DropdownMenu.Root>
-                </div>
-                <div className="flex w-full gap-4">
-                  <TextField
-                    className="h-auto w-full flex-none"
-                    label="Effective Start Date"
-                    type="date"
-                  >
-                    <TextField.Input
-                      value=""
-                      onChange={(event: React.ChangeEvent<HTMLInputElement>) => {}}
-                    />
-                  </TextField>
-                  <TextField
-                    className="h-auto w-full flex-none"
-                    label="Effective End Date"
-                    type="date"
-                  >
-                    <TextField.Input
-                      value=""
-                      onChange={(event: React.ChangeEvent<HTMLInputElement>) => {}}
-                    />
-                  </TextField>
                 </div>
               </div>
               <div className="flex h-px w-full flex-none flex-col items-center gap-2 bg-neutral-border" />
@@ -244,6 +246,7 @@ function PlanEditModal() {
                 disabled={true}
                 variant="neutral-secondary"
                 icon={<FeatherDownload />}
+                onClick={(event: React.MouseEvent<HTMLButtonElement>) => {}}
               >
                 Download
               </Button>
@@ -264,6 +267,72 @@ function PlanEditModal() {
                 variant="neutral-secondary"
                 size="small"
                 icon={<FeatherUpload />}
+
+                <div className="flex w-full flex-col items-start gap-1">
+                  <span className="text-caption font-caption text-default-font">
+                    Age Calculation Method
+                  </span>
+                  <SubframeCore.DropdownMenu.Root>
+                    <SubframeCore.DropdownMenu.Trigger asChild={true}>
+                      <Button
+                        className="h-8 w-full flex-none"
+                        variant="neutral-secondary"
+                        iconRight={<FeatherChevronDown />}
+                      >
+                        Select Age Calculation Method
+                      </Button>
+                    </SubframeCore.DropdownMenu.Trigger>
+                    <SubframeCore.DropdownMenu.Portal>
+                      <SubframeCore.DropdownMenu.Content
+                        side="bottom"
+                        align="start"
+                        sideOffset={4}
+                        asChild={true}
+                      >
+                        <DropdownMenu>
+                          <DropdownMenu.DropdownItem>Coverage Start Date</DropdownMenu.DropdownItem>
+                          <DropdownMenu.DropdownItem>Plan Start Date</DropdownMenu.DropdownItem>
+                        </DropdownMenu>
+                      </SubframeCore.DropdownMenu.Content>
+                    </SubframeCore.DropdownMenu.Portal>
+                  </SubframeCore.DropdownMenu.Root>
+                </div>
+                <TextField
+                  className="h-auto w-full flex-none"
+                  label="Plan Type"
+                  helpText=""
+                >
+                  <TextField.Input
+                    placeholder="Enter plan type"
+                    value=""
+                    onChange={(event: React.ChangeEvent<HTMLInputElement>) => {}}
+                  />
+                </TextField>
+                <div className="flex w-full gap-4">
+                  <TextField
+                    className="h-auto w-full flex-none"
+                    label="Effective Start Date"
+                    type="date"
+                    helpText=""
+                  >
+                    <TextField.Input
+                      value=""
+                      onChange={(event: React.ChangeEvent<HTMLInputElement>) => {}}
+                    />
+                  </TextField>
+                  <TextField
+                    className="h-auto w-full flex-none"
+                    label="Effective End Date"
+                    type="date"
+                    helpText=""
+                  >
+                    <TextField.Input
+                      value=""
+                      onChange={(event: React.ChangeEvent<HTMLInputElement>) => {}}
+                    />
+                  </TextField>
+                </div>
+
                 onClick={(event: React.MouseEvent<HTMLButtonElement>) => {}}
               >
                 Upload PDF

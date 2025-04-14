@@ -107,24 +107,21 @@ function PlanEditModal() {
                         asChild={true}
                       >
                         <DropdownMenu>
-                    <DropdownMenu.DropdownItem icon={<FeatherActivity />}>Medical</DropdownMenu.DropdownItem>
-                    <DropdownMenu.DropdownItem>Dental</DropdownMenu.DropdownItem>
-                    <DropdownMenu.DropdownItem icon={<FeatherEye />}>Vision</DropdownMenu.DropdownItem>
-                    <DropdownMenu.DropdownItem>Life</DropdownMenu.DropdownItem>
-                    <DropdownMenu.DropdownItem>Accidental Death and Dismemberment</DropdownMenu.DropdownItem>
-                    <DropdownMenu.DropdownItem>Voluntary Life</DropdownMenu.DropdownItem>
-                    <DropdownMenu.DropdownItem>Voluntary Critical Illness</DropdownMenu.DropdownItem>
-                    <DropdownMenu.DropdownItem>Short Term Disability</DropdownMenu.DropdownItem>
-                    <DropdownMenu.DropdownItem>Voluntary Short Term Disability</DropdownMenu.DropdownItem>
-                    <DropdownMenu.DropdownItem>Long Term Disability</DropdownMenu.DropdownItem>
-                    <DropdownMenu.DropdownItem>Hospital Indemnity</DropdownMenu.DropdownItem>
-                    <DropdownMenu.DropdownItem>Accident</DropdownMenu.DropdownItem>
-                    <DropdownMenu.DropdownItem>Cancer</DropdownMenu.DropdownItem>
-                    <DropdownMenu.DropdownItem>HSA</DropdownMenu.DropdownItem>
-                    <DropdownMenu.DropdownItem>Healthcare FSA</DropdownMenu.DropdownItem>
-                    <DropdownMenu.DropdownItem>Limited Purpose FSA</DropdownMenu.DropdownItem>
-                    <DropdownMenu.DropdownItem>Dependent Care FSA</DropdownMenu.DropdownItem>
-                  </DropdownMenu>
+                          <DropdownMenu.DropdownItem icon={<FeatherActivity />}>
+                            Medical
+                          </DropdownMenu.DropdownItem>
+                          <DropdownMenu.DropdownItem>
+                            Dental
+                          </DropdownMenu.DropdownItem>
+                          <DropdownMenu.DropdownItem icon={<FeatherEye />}>
+                            Vision
+                          </DropdownMenu.DropdownItem>
+                          <DropdownMenu.DropdownItem
+                            icon={<FeatherPlusCircle />}
+                          >
+                            Other
+                          </DropdownMenu.DropdownItem>
+                        </DropdownMenu>
                       </SubframeCore.DropdownMenu.Content>
                     </SubframeCore.DropdownMenu.Portal>
                   </SubframeCore.DropdownMenu.Root>
@@ -196,9 +193,24 @@ function PlanEditModal() {
                         asChild={true}
                       >
                         <DropdownMenu>
-                          <DropdownMenu.DropdownItem icon={<FeatherCircleDot />}>Composite</DropdownMenu.DropdownItem>
-                          <DropdownMenu.DropdownItem icon={<FeatherFileDigit />}>Age Banded</DropdownMenu.DropdownItem>
-                          <DropdownMenu.DropdownItem icon={<FeatherBarChart />}>Volume Based</DropdownMenu.DropdownItem>
+                          <DropdownMenu.DropdownItem
+                            icon={<FeatherFileDigit />}
+                          >
+                            Age Banded
+                          </DropdownMenu.DropdownItem>
+                          <DropdownMenu.DropdownItem
+                            icon={<FeatherCircleDot />}
+                          >
+                            Composite
+                          </DropdownMenu.DropdownItem>
+                          <DropdownMenu.DropdownItem icon={<FeatherBarChart />}>
+                            Volume
+                          </DropdownMenu.DropdownItem>
+                          <DropdownMenu.DropdownItem
+                            icon={<FeatherHelpCircle />}
+                          >
+                            Other
+                          </DropdownMenu.DropdownItem>
                         </DropdownMenu>
                       </SubframeCore.DropdownMenu.Content>
                     </SubframeCore.DropdownMenu.Portal>
@@ -267,72 +279,6 @@ function PlanEditModal() {
                 variant="neutral-secondary"
                 size="small"
                 icon={<FeatherUpload />}
-
-                <div className="flex w-full flex-col items-start gap-1">
-                  <span className="text-caption font-caption text-default-font">
-                    Age Calculation Method
-                  </span>
-                  <SubframeCore.DropdownMenu.Root>
-                    <SubframeCore.DropdownMenu.Trigger asChild={true}>
-                      <Button
-                        className="h-8 w-full flex-none"
-                        variant="neutral-secondary"
-                        iconRight={<FeatherChevronDown />}
-                      >
-                        Select Age Calculation Method
-                      </Button>
-                    </SubframeCore.DropdownMenu.Trigger>
-                    <SubframeCore.DropdownMenu.Portal>
-                      <SubframeCore.DropdownMenu.Content
-                        side="bottom"
-                        align="start"
-                        sideOffset={4}
-                        asChild={true}
-                      >
-                        <DropdownMenu>
-                          <DropdownMenu.DropdownItem>Coverage Start Date</DropdownMenu.DropdownItem>
-                          <DropdownMenu.DropdownItem>Plan Start Date</DropdownMenu.DropdownItem>
-                        </DropdownMenu>
-                      </SubframeCore.DropdownMenu.Content>
-                    </SubframeCore.DropdownMenu.Portal>
-                  </SubframeCore.DropdownMenu.Root>
-                </div>
-                <TextField
-                  className="h-auto w-full flex-none"
-                  label="Plan Type"
-                  helpText=""
-                >
-                  <TextField.Input
-                    placeholder="Enter plan type"
-                    value=""
-                    onChange={(event: React.ChangeEvent<HTMLInputElement>) => {}}
-                  />
-                </TextField>
-                <div className="flex w-full gap-4">
-                  <TextField
-                    className="h-auto w-full flex-none"
-                    label="Effective Start Date"
-                    type="date"
-                    helpText=""
-                  >
-                    <TextField.Input
-                      value=""
-                      onChange={(event: React.ChangeEvent<HTMLInputElement>) => {}}
-                    />
-                  </TextField>
-                  <TextField
-                    className="h-auto w-full flex-none"
-                    label="Effective End Date"
-                    type="date"
-                    helpText=""
-                  >
-                    <TextField.Input
-                      value=""
-                      onChange={(event: React.ChangeEvent<HTMLInputElement>) => {}}
-                    />
-                  </TextField>
-                </div>
-
                 onClick={(event: React.MouseEvent<HTMLButtonElement>) => {}}
               >
                 Upload PDF

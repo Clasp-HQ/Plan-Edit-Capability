@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="120" height="48" viewBox="0 0 120 48" xmlns="http://www.w3.org/2000/svg">
+  <!-- Blue Cross -->
+  <g transform="translate(0, 0)">
+    <rect x="8" y="4" width="40" height="40" fill="#00A1E1"/>
+    <path fill="white" d="M18,12 v-4 h20 v4 h4 v20 h-4 v4 h-20 v-4 h-4 v-20 z"/>
+  </g>
+  
+  <!-- Blue Shield -->
+  <g transform="translate(60, 4)">
+    <path fill="#00A1E1" d="M0,0 l40,0 l0,44 l-20,-8 l-20,8 z"/>
+    <path fill="white" d="M4,4 l32,0 l0,34 l-16,-6 l-16,6 z"/>
+    <path fill="#00A1E1" d="M20,8 c-8,0 -12,4 -12,12 c0,8 12,16 12,16 c0,0 12,-8 12,-16 c0,-8 -4,-12 -12,-12z"/>
+  </g>
+</svg> 

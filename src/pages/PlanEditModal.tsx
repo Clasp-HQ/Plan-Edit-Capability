@@ -44,6 +44,9 @@ import { Table } from "@/ui/components/Table";
 import PremiumWizard from "@/ui/components/PremiumWizard";
 import { FeatherLock } from "@subframe/core";
 import { Accordion } from "@/ui/components/Accordion";
+import PremiumsTab from "../components/premiums/PremiumsTab";
+import { Select } from "@/ui/components/Select";
+import { TextArea } from "@/ui/components/TextArea";
 
 // Define the Line of Coverage enum
 enum LineOfCoverage {
@@ -142,6 +145,25 @@ enum ContributionType {
   FLAT_EMPLOYER_COST = "flat_employer_cost"
 }
 
+// Add new enum for connection method
+enum ConnectionMethod {
+  API = "api",
+  EDI = "edi",
+  MANUAL = "manual"
+}
+
+// Add new enum for waiting period unit
+enum WaitingPeriodUnit {
+  DAY = "day",
+  MONTH = "month"
+}
+
+// Add new enum for waiting period policy
+enum WaitingPeriodPolicy {
+  FIRST_OF_MONTH = "first_of_month",
+  END_OF_WAITING_PERIOD = "end_of_waiting_period"
+}
+
 // Indicator for field guardrail status
 const FieldIndicator = ({ type }: { type: 'lock' | 'warn' | 'ok' }) => {
   let icon;
@@ -193,9 +215,12 @@ function PlanEditModal({ onBack }: { onBack?: () => void }) {
   const [minimumHoursWorked, setMinimumHoursWorked] = useState<string>("");
   const [maxContributingChildren, setMaxContributingChildren] = useState<string>("");
   const [terminationPolicy, setTerminationPolicy] = useState<TerminationPolicy | null>(null);
+  const [connectionMethod, setConnectionMethod] = useState<ConnectionMethod>(ConnectionMethod.MANUAL);
   const [requiredSubclass, setRequiredSubclass] = useState<Subclass | null>(null);
   const [waitingPeriodDuration, setWaitingPeriodDuration] = useState<string>("");
-  const [waitingPeriodType, setWaitingPeriodType] = useState<PeriodType | null>(null);
+  const [waitingPeriodType, setWaitingPeriodType] = useState<WaitingPeriodUnit | null>(null);
+  const [waitingPeriodPolicy, setWaitingPeriodPolicy] = useState<WaitingPeriodPolicy | null>(null);
+  const [allowCoincidingStart, setAllowCoincidingStart] = useState<boolean>(true);
 
   // Add state for Premium attributes
   const [premiumAmount, setPremiumAmount] = useState<string>("");
@@ -238,11 +263,8 @@ function PlanEditModal({ onBack }: { onBack?: () => void }) {
   ];
 
   // Replace tooltip helper with subtext label
-  const AttributeLabel = ({ label, description }: { label: string; description: string }) => (
-    <div className="flex flex-col">
-      <span className="text-body font-body text-default-font">{label}</span>
-      <span className="text-xs text-subtext-color">{description}</span>
-    </div>
+  const AttributeLabel = ({ label }: { label: string }) => (
+    <span className="text-body font-body text-default-font">{label}</span>
   );
 
   // Add state for showing summary
@@ -250,6 +272,13 @@ function PlanEditModal({ onBack }: { onBack?: () => void }) {
 
   // Add new state for details editing
   const [isDetailsEditing, setIsDetailsEditing] = useState(false);
+
+  const [selectedSubclass, setSelectedSubclass] = useState<string>("Field Services"); // State for subclass dropdown
+  const subclasses = ["Field Services", "Manager", "Remote Members"]; // Available subclasses
+
+  // Add new state variables
+  const [planDetails, setPlanDetails] = useState<string>(""); // plan_details
+  const [ageCalculationMethod, setAgeCalculationMethod] = useState<AgeCalculationMethod>(AgeCalculationMethod.PLAN_START_DATE); // age_calculation_method
 
   // Handle save changes
   const handleSaveChanges = () => {
@@ -263,6 +292,8 @@ function PlanEditModal({ onBack }: { onBack?: () => void }) {
       planType,
       effectiveStart,
       effectiveEnd,
+      planDetails,
+      ageCalculationMethod,
       // Add attributes to save
       requiresPcp,
       cobraEligible,
@@ -281,9 +312,12 @@ function PlanEditModal({ onBack }: { onBack?: () => void }) {
       minimumHoursWorked,
       maxContributingChildren,
       terminationPolicy,
+      connectionMethod,
       requiredSubclass,
       waitingPeriodDuration,
       waitingPeriodType,
+      waitingPeriodPolicy,
+      allowCoincidingStart,
       // Add premium and contribution attributes
       premiumAmount,
       tobaccoUsage,
@@ -393,6 +427,43 @@ const getPeriodTypeDisplayName = (value: PeriodType): string => {
   }
 };
 
+// Display name for Age Calculation Method
+const getAgeCalculationMethodDisplayName = (value: AgeCalculationMethod): string => {
+  switch (value) {
+    case AgeCalculationMethod.COVERAGE_START_DATE: return "Coverage Start Date";
+    case AgeCalculationMethod.PLAN_START_DATE: return "Plan Start Date";
+    default: return value;
+  }
+};
+
+// Display name for ConnectionMethod
+const getConnectionMethodDisplayName = (value: ConnectionMethod): string => {
+  switch (value) {
+    case ConnectionMethod.API: return "API";
+    case ConnectionMethod.EDI: return "EDI";
+    case ConnectionMethod.MANUAL: return "Manual";
+    default: return value;
+  }
+};
+
+// Display name for WaitingPeriodUnit
+const getWaitingPeriodUnitDisplayName = (value: WaitingPeriodUnit): string => {
+  switch (value) {
+    case WaitingPeriodUnit.DAY: return "Day";
+    case WaitingPeriodUnit.MONTH: return "Month";
+    default: return value;
+  }
+};
+
+// Display name for WaitingPeriodPolicy
+const getWaitingPeriodPolicyDisplayName = (value: WaitingPeriodPolicy): string => {
+  switch (value) {
+    case WaitingPeriodPolicy.FIRST_OF_MONTH: return "First of Month";
+    case WaitingPeriodPolicy.END_OF_WAITING_PERIOD: return "End of Waiting Period";
+    default: return value;
+  }
+};
+
   // Handle date selection
   const handleStartDateSelect = (
     selected: Date | undefined,
@@ -430,509 +501,667 @@ const getPeriodTypeDisplayName = (value: PeriodType): string => {
           </Button>
         </div>
         {!showSummary ? (
-          <div className="flex w-full grow shrink-0 basis-0 items-start gap-6 px-6 pb-12 h-[calc(100vh-80px)] overflow-hidden">
-            <div className={`flex flex-col items-start gap-6 ${activeTab === "details" ? "w-1/2" : "w-full"} h-full`}>
+          <div className="flex w-full grow flex-col items-start gap-4 px-6 pb-12 h-[calc(100vh-80px)] overflow-hidden">
+            {/* Subclass Title and Selector Section */}
+            <div className="flex w-full items-center justify-between gap-4 pt-2"> 
+              <h2 className="text-heading-3 font-heading-3 text-default-font"> 
+                {planName || 'Plan'} — {selectedSubclass}
+              </h2>
+              <SubframeCore.DropdownMenu.Root>
+                <SubframeCore.DropdownMenu.Trigger asChild>
+                  <Button
+                    variant="neutral-secondary"
+                    iconRight={<FeatherChevronDown />}
+                  >
+                    {selectedSubclass}
+                  </Button>
+                </SubframeCore.DropdownMenu.Trigger>
+                <SubframeCore.DropdownMenu.Portal>
+                  <SubframeCore.DropdownMenu.Content side="bottom" align="end" sideOffset={4} asChild={true}> 
+                     <DropdownMenu>
+                      {subclasses.map((subclass) => (
+                        <DropdownMenu.DropdownItem key={subclass} onClick={() => setSelectedSubclass(subclass)}>
+                          {subclass}
+                        </DropdownMenu.DropdownItem>
+                      ))}
+                    </DropdownMenu>
+                  </SubframeCore.DropdownMenu.Content>
+                </SubframeCore.DropdownMenu.Portal>
+              </SubframeCore.DropdownMenu.Root>
+            </div>
+            
             <Tabs>
-                <Tabs.Item 
-                  active={activeTab === "details"} 
-                  icon={<FeatherLayers />}
-                  onClick={() => setActiveTab("details")}
-                >
+              <Tabs.Item 
+                active={activeTab === "details"} 
+                icon={<FeatherLayers />}
+                onClick={() => setActiveTab("details")}
+              >
                 Plan Details
               </Tabs.Item>
-                <Tabs.Item 
-                  active={activeTab === "attributes"} 
-                  icon={<FeatherScale />}
-                  onClick={() => setActiveTab("attributes")}
-                >
-                  Attributes
-                </Tabs.Item>
-                <Tabs.Item 
-                  active={activeTab === "premiums"} 
-                  icon={<FeatherDollarSign />}
-                  onClick={() => setActiveTab("premiums")}
-                >
-                  Premiums
-                </Tabs.Item>
-                <Tabs.Item 
-                  active={activeTab === "contributions"} 
-                  icon={<FeatherPercent />}
-                  onClick={() => setActiveTab("contributions")}
-                >
-                  Contributions
-                </Tabs.Item>
+              <Tabs.Item 
+                active={activeTab === "premiums"} 
+                icon={<FeatherDollarSign />}
+                onClick={() => setActiveTab("premiums")}
+              >
+                Premiums
+              </Tabs.Item>
+              <Tabs.Item 
+                active={activeTab === "contributions"} 
+                icon={<FeatherPercent />}
+                onClick={() => setActiveTab("contributions")}
+              >
+                Contributions
+              </Tabs.Item>
+              <Tabs.Item
+                active={activeTab === "plan_document"}
+                icon={<FeatherFileText />}
+                onClick={() => setActiveTab("plan_document")}
+              >
+                Plan Document
+              </Tabs.Item>
             </Tabs>
-              
-              {/* Plan Details Tab */}
-              {activeTab === "details" && (
-                <div className="flex w-full flex-col items-start gap-6 rounded-md border border-solid border-neutral-border bg-default-background px-6 py-6 shadow-sm overflow-y-auto h-[calc(100%-48px)]">
-                  <div className="flex w-full justify-end mb-4">
-                    <Button variant="neutral-secondary" size="small" onClick={() => setIsDetailsEditing(prev => !prev)}>
-                      {isDetailsEditing ? "Cancel" : "Edit"}
-                    </Button>
+            
+            <div className="flex w-full grow items-start gap-6 h-[calc(100%-48px)] pb-8">
+              {/* Show left content for details, premiums, and contributions */}
+              {(activeTab === 'details' || activeTab === 'premiums' || activeTab === 'contributions') && (
+                <>
+                  {/* Left: Plan Details, Premiums, Contributions */}
+                  <div className={`flex flex-col items-start gap-6 ${activeTab === "details" ? "w-1/2" : "w-full"} h-full pb-8" id="plan-details-left-box"`}>
+                    {/* Plan Details Tab */}
+                    {activeTab === "details" && (
+                      <div className="flex w-full flex-col items-start gap-6 rounded-md border border-solid border-neutral-border bg-default-background px-4 py-4 shadow-sm overflow-y-auto h-full">
+                        {/* Editable Plan Overview */}
+                        {isDetailsEditing ? (
+                          <div className="w-full">
+                            {/* Title and Edit Button Row */}
+                            <div className="flex w-full items-center justify-between mb-4">
+                              <h3 className="text-heading-4 font-heading-4 text-default-font">Plan Overview</h3>
+                              <div className="flex gap-2">
+                                <Button variant="neutral-secondary" size="small" onClick={() => setIsDetailsEditing(false)}>
+                                  Cancel
+                                </Button>
+                                <Button variant="brand-primary" size="small" onClick={() => setIsDetailsEditing(false)}>
+                                  Save
+                                </Button>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4 w-full">
+                              <div className="flex flex-col">
+                                <span className="text-caption-bold font-caption-bold text-default-font flex items-center">
+                                  Carrier<FieldIndicator type='lock'/>
+                                </span>
+                                <div className="flex items-center h-10 w-full rounded-md border border-solid border-neutral-200 bg-neutral-50 px-3">
+                                  <span className="text-body font-body text-neutral-500">{carrier || "-"}</span>
+                                </div>
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-caption-bold font-caption-bold text-default-font flex items-center">
+                                  Group Number<FieldIndicator type='warn'/>
+                                </span>
+                                <TextField className="h-auto w-full flex-none">
+                                  <TextField.Input
+                                    placeholder="Enter Group Number"
+                                    value={groupNumber}
+                                    onChange={(e) => setGroupNumber(e.target.value)}
+                                  />
+                                </TextField>
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-caption-bold font-caption-bold text-default-font flex items-center">
+                                  Plan Type<FieldIndicator type='ok'/>
+                                </span>
+                                <Select
+                                  value={planType || ""}
+                                  onValueChange={(val) => setPlanType(val as PlanType)}
+                                  placeholder="Select Plan Type"
+                                  className="h-10 w-full"
+                                >
+                                  {Object.values(PlanType).map((value) => (
+                                    <Select.Item key={value} value={value}>
+                                      {getPlanTypeDisplayName(value)}
+                                    </Select.Item>
+                                  ))}
+                                </Select>
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-caption-bold font-caption-bold text-default-font flex items-center">
+                                  Line of Coverage<FieldIndicator type='lock'/>
+                                </span>
+                                <div className="flex items-center h-10 w-full rounded-md border border-solid border-neutral-200 bg-neutral-50 px-3">
+                                  <span className="text-body font-body text-neutral-500">
+                                    {lineOfCoverage ? getLineOfCoverageDisplayName(lineOfCoverage) : "-"}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="flex flex-col col-span-2">
+                                <span className="text-caption-bold font-caption-bold text-default-font flex items-center">
+                                  Plan Details<FieldIndicator type='warn'/>
+                                </span>
+                                <TextArea className="w-full">
+                                  <TextArea.Input
+                                    placeholder="Enter plan details JSON"
+                                    value={planDetails}
+                                    onChange={(e) => setPlanDetails(e.target.value)}
+                                  />
+                                </TextArea>
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-caption-bold font-caption-bold text-default-font flex items-center">
+                                  Plan Effective Start<FieldIndicator type='warn'/>
+                                </span>
+                                <div className="relative">
+                                  <TextField className="h-auto w-full flex-none">
+                                    <TextField.Input
+                                      readOnly
+                                      onClick={() => setIsStartDatePickerOpen(true)}
+                                      value={effectiveStart ? effectiveStart.toLocaleDateString() : ""}
+                                      placeholder="Select Start Date"
+                                      className="cursor-pointer"
+                                    />
+                                    <FeatherCalendar
+                                      className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 cursor-pointer"
+                                      onClick={() => setIsStartDatePickerOpen(true)}
+                                    />
+                                  </TextField>
+                                </div>
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-caption-bold font-caption-bold text-default-font flex items-center">
+                                  Plan Effective End<FieldIndicator type='warn'/>
+                                </span>
+                                <div className="relative">
+                                  <TextField className="h-auto w-full flex-none">
+                                    <TextField.Input
+                                      readOnly
+                                      onClick={() => setIsEndDatePickerOpen(true)}
+                                      value={effectiveEnd ? effectiveEnd.toLocaleDateString() : ""}
+                                      placeholder="Select End Date"
+                                      className="cursor-pointer"
+                                    />
+                                    <FeatherCalendar
+                                      className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 cursor-pointer"
+                                      onClick={() => setIsEndDatePickerOpen(true)}
+                                    />
+                                  </TextField>
+                                </div>
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-caption-bold font-caption-bold text-default-font flex items-center">
+                                  Premium Type<FieldIndicator type='lock'/>
+                                </span>
+                                <div className="flex items-center h-10 w-full rounded-md border border-solid border-neutral-200 bg-neutral-50 px-3">
+                                  <span className="text-body font-body text-neutral-500">
+                                    {premiumType ? getPremiumTypeDisplayName(premiumType) : "-"}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-caption-bold font-caption-bold text-default-font flex items-center">
+                                  Age Calculation Method<FieldIndicator type='warn'/>
+                                </span>
+                                <Select
+                                  value={ageCalculationMethod}
+                                  onValueChange={(val) => setAgeCalculationMethod(val as AgeCalculationMethod)}
+                                  placeholder="Select Method"
+                                  className="h-10 w-full"
+                                >
+                                  {Object.values(AgeCalculationMethod).map((value) => (
+                                    <Select.Item key={value} value={value}>
+                                      {getAgeCalculationMethodDisplayName(value)}
+                                    </Select.Item>
+                                  ))}
+                                </Select>
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-caption-bold font-caption-bold text-default-font flex items-center">
+                                  Base Spouse Age Off Member<FieldIndicator type='warn'/>
+                                </span>
+                                <Switch
+                                  checked={baseSpouseAgeOffMember}
+                                  onCheckedChange={setBaseSpouseAgeOffMember}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            {/* Static Display Mode */}
+                            <div className="w-full">
+                              {/* Title and Edit Button Row */}
+                              <div className="flex w-full items-center justify-between mb-4">
+                                <h3 className="text-heading-4 font-heading-4 text-default-font">Plan Overview</h3>
+                                <Button variant="neutral-secondary" size="small" onClick={() => setIsDetailsEditing(true)}>
+                                  Edit
+                                </Button>
+                              </div>
+                              <div className="grid grid-cols-2 gap-4 w-full">
+                                <div className="flex flex-col">
+                                  <span className="text-caption-bold font-caption-bold text-default-font flex items-center">
+                                    Carrier<FieldIndicator type='lock'/>
+                                  </span>
+                                  <span className="text-body font-body text-default-font">{carrier || "-"}</span>
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="text-caption-bold font-caption-bold text-default-font flex items-center">
+                                    Group Number<FieldIndicator type='warn'/>
+                                  </span>
+                                  <span className="text-body font-body text-default-font">{groupNumber || "-"}</span>
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="text-caption-bold font-caption-bold text-default-font flex items-center">
+                                    Plan Type<FieldIndicator type='ok'/>
+                                  </span>
+                                  <span className="text-body font-body text-default-font">
+                                    {planType ? getPlanTypeDisplayName(planType) : "-"}
+                                  </span>
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="text-caption-bold font-caption-bold text-default-font flex items-center">
+                                    Line of Coverage<FieldIndicator type='lock'/>
+                                  </span>
+                                  <span className="text-body font-body text-default-font">
+                                    {lineOfCoverage ? getLineOfCoverageDisplayName(lineOfCoverage) : "-"}
+                                  </span>
+                                </div>
+                                <div className="flex flex-col col-span-2">
+                                  <span className="text-caption-bold font-caption-bold text-default-font flex items-center">
+                                    Plan Details<FieldIndicator type='warn'/>
+                                  </span>
+                                  <span className="text-body font-body text-default-font whitespace-pre-wrap">
+                                    {planDetails || "-"}
+                                  </span>
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="text-caption-bold font-caption-bold text-default-font flex items-center">
+                                    Plan Effective Start<FieldIndicator type='warn'/>
+                                  </span>
+                                  <span className="text-body font-body text-default-font">
+                                    {effectiveStart ? effectiveStart.toLocaleDateString() : "-"}
+                                  </span>
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="text-caption-bold font-caption-bold text-default-font flex items-center">
+                                    Plan Effective End<FieldIndicator type='warn'/>
+                                  </span>
+                                  <span className="text-body font-body text-default-font">
+                                    {effectiveEnd ? effectiveEnd.toLocaleDateString() : "-"}
+                                  </span>
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="text-caption-bold font-caption-bold text-default-font flex items-center">
+                                    Premium Type<FieldIndicator type='lock'/>
+                                  </span>
+                                  <span className="text-body font-body text-default-font">
+                                    {premiumType ? getPremiumTypeDisplayName(premiumType) : "-"}
+                                  </span>
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="text-caption-bold font-caption-bold text-default-font flex items-center">
+                                    Age Calculation Method<FieldIndicator type='warn'/>
+                                  </span>
+                                  <span className="text-body font-body text-default-font">
+                                    {getAgeCalculationMethodDisplayName(ageCalculationMethod)}
+                                  </span>
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="text-caption-bold font-caption-bold text-default-font flex items-center">
+                                    Base Spouse Age Off Member<FieldIndicator type='warn'/>
+                                  </span>
+                                  <span className="text-body font-body text-default-font">
+                                    {baseSpouseAgeOffMember ? "Yes" : "No"}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Premiums Tab */}
+                    {activeTab === "premiums" && (
+                      <div className="w-full h-full overflow-y-auto">
+                        <PremiumsTab />
+                      </div>
+                    )}
+                    {/* Contributions Tab */}
+                    {activeTab === "contributions" && (
+                      <div className="w-full h-full overflow-y-auto">
+                        <PremiumWizard defaultTab="contributions" />
+                      </div>
+                    )}
                   </div>
-                  {isDetailsEditing && (
-                    <div className="w-full p-2 bg-green-100 text-green-800 text-center font-body-bold">
-                      Edit mode is active
-                    </div>
-                  )}
-                  {isDetailsEditing ? (
-                    <div className="flex w-full flex-col items-start gap-4">
-                      {/* Static Plan Overview */}
-                      <div className="w-full">
-                        <h3 className="text-heading-4 font-heading-4 text-default-font mb-4">Plan Overview</h3>
-                        <div className="grid grid-cols-2 gap-4 w-full">
-                          <div className="flex flex-col">
-                            <span className="text-caption-bold font-caption-bold text-default-font">Plan Name</span>
-                            <span className="text-body font-body text-default-font">{planName || "-"}</span>
+                  {/* Right: Attributes panel only for Plan Details tab */}
+                  {activeTab === 'details' && (
+                    <div className="flex flex-col items-start gap-4 self-stretch rounded-md border border-solid border-neutral-border bg-neutral-50 px-6 py-6 w-1/2 overflow-y-auto" style={{ height: '100%' }} id="plan-details-right-box">
+                      {/* Coverage Configuration (moved from right panel) */}
+                      <Accordion defaultOpen className="w-full mb-8"
+                        trigger={
+                          <div className="flex w-full items-center gap-2 px-3 py-4">
+                            <span className="grow shrink-0 basis-0 text-body font-body text-default-font">Coverage Configuration</span>
+                            <Accordion.Chevron />
                           </div>
-                          <div className="flex flex-col">
-                            <span className="text-caption-bold font-caption-bold text-default-font">Group Number</span>
-                            <span className="text-body font-body text-default-font">{groupNumber || "-"}</span>
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-caption-bold font-caption-bold text-default-font">Carrier</span>
-                            <span className="text-body font-body text-default-font">{carrier || "-"}</span>
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-caption-bold font-caption-bold text-default-font">Line of Coverage</span>
-                            <span className="text-body font-body text-default-font">{lineOfCoverage ? getLineOfCoverageDisplayName(lineOfCoverage) : "-"}</span>
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-caption-bold font-caption-bold text-default-font">Plan Type</span>
-                            <span className="text-body font-body text-default-font">{planType ? getPlanTypeDisplayName(planType) : "-"}</span>
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-caption-bold font-caption-bold text-default-font">Premium Type</span>
-                            <span className="text-body font-body text-default-font">{premiumType ? getPremiumTypeDisplayName(premiumType) : "-"}</span>
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-caption-bold font-caption-bold text-default-font">Effective Start</span>
-                            <span className="text-body font-body text-default-font">{effectiveStart ? effectiveStart.toLocaleDateString() : "-"}</span>
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-caption-bold font-caption-bold text-default-font">Effective End</span>
-                            <span className="text-body font-body text-default-font">{effectiveEnd ? effectiveEnd.toLocaleDateString() : "-"}</span>
+                        }
+                      >
+                        <div className="flex w-full grow shrink-0 basis-0 flex-col items-start gap-2 px-3 py-4">
+                          <div className="grid grid-cols-2 gap-8 w-full">
+                            <div className="flex w-full items-start justify-between">
+                              <div className="flex flex-col">
+                                <span className="text-body-bold font-body-bold text-default-font flex items-center">Is Pre-Tax<FieldIndicator type='warn'/></span>
+                                <span className="text-sm text-neutral-500">Controls whether premiums are deducted before taxes</span>
+                              </div>
+                              <Switch checked={isPreTax} onCheckedChange={setIsPreTax} />
+                            </div>
+                            <div className="flex w-full items-start justify-between">
+                              <div className="flex flex-col">
+                                <span className="text-body-bold font-body-bold text-default-font flex items-center">Partner Dependents Eligible<FieldIndicator type='warn'/></span>
+                                <span className="text-sm text-neutral-500">Currently only works with supplemental plans</span>
+                              </div>
+                              <Switch checked={partnerDependentsEligible} onCheckedChange={setPartnerDependentsEligible} />
+                            </div>
+                            <div className="flex w-full items-start justify-between">
+                              <div className="flex flex-col">
+                                <span className="text-body-bold font-body-bold text-default-font flex items-center">Child Dependents Eligible<FieldIndicator type='warn'/></span>
+                                <span className="text-sm text-neutral-500">Currently only works with supplemental plans</span>
+                              </div>
+                              <Switch checked={childDependentsEligible} onCheckedChange={setChildDependentsEligible} />
+                            </div>
+                            <div className="flex w-full items-start justify-between">
+                              <div className="flex flex-col">
+                                <span className="text-body-bold font-body-bold text-default-font flex items-center">Required Enrollment<FieldIndicator type='warn'/></span>
+                                <span className="text-sm text-neutral-500">Automatically enroll members</span>
+                              </div>
+                              <Switch checked={requiredEnrollment} onCheckedChange={setRequiredEnrollment} />
+                            </div>
+                            <div className="flex w-full items-start justify-between">
+                              <div className="flex flex-col">
+                                <span className="text-body-bold font-body-bold text-default-font flex items-center">COBRA Eligible<FieldIndicator type='warn'/></span>
+                                <span className="text-sm text-neutral-500">Determines COBRA eligibility</span>
+                              </div>
+                              <Switch checked={cobraEligible} onCheckedChange={setCobraEligible} />
+                            </div>
+                            <div className="flex w-full items-start justify-between">
+                              <div className="flex flex-col">
+                                <span className="text-body-bold font-body-bold text-default-font flex items-center">HSA Eligible<FieldIndicator type='lock'/></span>
+                                <span className="text-sm text-neutral-500">Can pair with HSA</span>
+                              </div>
+                              <Switch checked={hsaEligible} onCheckedChange={setHsaEligible} disabled />
+                            </div>
+                            <div className="flex w-full items-start justify-between">
+                              <div className="flex flex-col">
+                                <span className="text-body-bold font-body-bold text-default-font flex items-center">Requires Primary Care Provider<FieldIndicator type='warn'/></span>
+                                <span className="text-sm text-neutral-500">Members must select a PCP</span>
+                              </div>
+                              <Switch checked={requiresPcp} onCheckedChange={setRequiresPcp} />
+                            </div>
+                            <div className="flex w-full items-start justify-between">
+                              <div className="flex flex-col">
+                                <span className="text-body-bold font-body-bold text-default-font">Max Contributing Children<FieldIndicator type='warn'/></span>
+                                <span className="text-sm text-neutral-500">Positive integer or null</span>
+                              </div>
+                              <TextField className="w-[120px]">
+                                <TextField.Input
+                                  type="number"
+                                  placeholder="Enter number"
+                                  value={maxContributingChildren}
+                                  onChange={(e) => { const v = e.target.value; if (v === '' || parseInt(v) >= 0) setMaxContributingChildren(v); }}
+                                />
+                              </TextField>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      {/* Static Participation Details */}
-                      <div className="w-full">
-                        <h3 className="text-heading-4 font-heading-4 text-default-font mb-4">Participation Details</h3>
-                        <div className="grid grid-cols-2 gap-4 w-full">
-                          <div className="flex flex-col">
-                            <span className="text-caption-bold font-caption-bold text-default-font">Waiting Period Type</span>
-                            <span className="text-body font-body text-default-font">{waitingPeriodType ? getPeriodTypeDisplayName(waitingPeriodType) : "-"}</span>
+                      </Accordion>
+                      {/* Plan Configuration */}
+                      <Accordion defaultOpen className="w-full mb-8"
+                        trigger={
+                          <div className="flex w-full items-center gap-2 px-3 py-4">
+                            <span className="grow shrink-0 basis-0 text-body font-body text-default-font">Plan Configuration</span>
+                            <Accordion.Chevron />
                           </div>
-                          <div className="flex flex-col">
-                            <span className="text-caption-bold font-caption-bold text-default-font">Waiting Period Duration</span>
-                            <span className="text-body font-body text-default-font">{waitingPeriodDuration || "-"}</span>
-                          </div>
-                          <div className="flex flex-col col-span-2">
-                            <span className="text-caption-bold font-caption-bold text-default-font">Termination Policy</span>
-                            <span className="text-body font-body text-default-font">{terminationPolicy ? getTerminationPolicyDisplayName(terminationPolicy) : "-"}</span>
-                          </div>
-                          <div className="flex flex-col col-span-2">
-                            <span className="text-caption-bold font-caption-bold text-default-font">Rehire Policy</span>
-                            <span className="text-body font-body text-default-font">{rehirePolicy ? getRehirePolicyDisplayName(rehirePolicy) : "-"}</span>
+                        }
+                      >
+                        <div className="flex w-full grow shrink-0 basis-0 flex-col items-start gap-2 px-3 py-4">
+                          <div className="grid grid-cols-2 gap-8 w-full">
+                            <div className="flex flex-col">
+                              <span className="text-body-bold font-body-bold text-default-font flex items-center">
+                                Termination Policy<FieldIndicator type='warn'/>
+                              </span>
+                              <Select
+                                value={terminationPolicy || ""}
+                                onValueChange={(val) => setTerminationPolicy(val as TerminationPolicy)}
+                                placeholder="Select Termination Policy"
+                                className="h-10 w-full"
+                              >
+                                {Object.values(TerminationPolicy).map((value) => (
+                                  <Select.Item key={value} value={value}>
+                                    {getTerminationPolicyDisplayName(value)}
+                                  </Select.Item>
+                                ))}
+                              </Select>
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-body-bold font-body-bold text-default-font flex items-center">
+                                Connection Method<FieldIndicator type='lock'/>
+                              </span>
+                              <div className="flex items-center h-10 w-full rounded-md border border-solid border-neutral-200 bg-neutral-50 px-3">
+                                <span className="text-body font-body text-neutral-500">
+                                  {getConnectionMethodDisplayName(connectionMethod)}
+                                </span>
+                              </div>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex w-full flex-col items-start gap-4">
-                      {/* Static Plan Overview */}
-                      <div className="w-full">
-                        <h3 className="text-heading-4 font-heading-4 text-default-font mb-4">Plan Overview</h3>
-                        <div className="grid grid-cols-2 gap-4 w-full">
-                          <div className="flex flex-col">
-                            <span className="text-caption-bold font-caption-bold text-default-font">Plan Name</span>
-                            <span className="text-body font-body text-default-font">{planName || "-"}</span>
+                      </Accordion>
+                      {/* Eligibility */}
+                      <Accordion defaultOpen className="w-full mb-8"
+                        trigger={
+                          <div className="flex w-full items-center gap-2 px-3 py-4">
+                            <span className="grow shrink-0 basis-0 text-body font-body text-default-font">Eligibility</span>
+                            <Accordion.Chevron />
                           </div>
-                          <div className="flex flex-col">
-                            <span className="text-caption-bold font-caption-bold text-default-font">Group Number</span>
-                            <span className="text-body font-body text-default-font">{groupNumber || "-"}</span>
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-caption-bold font-caption-bold text-default-font">Carrier</span>
-                            <span className="text-body font-body text-default-font">{carrier || "-"}</span>
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-caption-bold font-caption-bold text-default-font">Line of Coverage</span>
-                            <span className="text-body font-body text-default-font">{lineOfCoverage ? getLineOfCoverageDisplayName(lineOfCoverage) : "-"}</span>
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-caption-bold font-caption-bold text-default-font">Plan Type</span>
-                            <span className="text-body font-body text-default-font">{planType ? getPlanTypeDisplayName(planType) : "-"}</span>
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-caption-bold font-caption-bold text-default-font">Premium Type</span>
-                            <span className="text-body font-body text-default-font">{premiumType ? getPremiumTypeDisplayName(premiumType) : "-"}</span>
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-caption-bold font-caption-bold text-default-font">Effective Start</span>
-                            <span className="text-body font-body text-default-font">{effectiveStart ? effectiveStart.toLocaleDateString() : "-"}</span>
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-caption-bold font-caption-bold text-default-font">Effective End</span>
-                            <span className="text-body font-body text-default-font">{effectiveEnd ? effectiveEnd.toLocaleDateString() : "-"}</span>
-                          </div>
-                        </div>
-                      </div>
-                      {/* Static Participation Details */}
-                      <div className="w-full">
-                        <h3 className="text-heading-4 font-heading-4 text-default-font mb-4">Participation Details</h3>
-                        <div className="grid grid-cols-2 gap-4 w-full">
-                          <div className="flex flex-col">
-                            <span className="text-caption-bold font-caption-bold text-default-font">Waiting Period Type</span>
-                            <span className="text-body font-body text-default-font">{waitingPeriodType ? getPeriodTypeDisplayName(waitingPeriodType) : "-"}</span>
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-caption-bold font-caption-bold text-default-font">Waiting Period Duration</span>
-                            <span className="text-body font-body text-default-font">{waitingPeriodDuration || "-"}</span>
-                          </div>
-                          <div className="flex flex-col col-span-2">
-                            <span className="text-caption-bold font-caption-bold text-default-font">Termination Policy</span>
-                            <span className="text-body font-body text-default-font">{terminationPolicy ? getTerminationPolicyDisplayName(terminationPolicy) : "-"}</span>
-                          </div>
-                          <div className="flex flex-col col-span-2">
-                            <span className="text-caption-bold font-caption-bold text-default-font">Rehire Policy</span>
-                            <span className="text-body font-body text-default-font">{rehirePolicy ? getRehirePolicyDisplayName(rehirePolicy) : "-"}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-              
-              {/* Attributes Tab */}
-              {activeTab === "attributes" && (
-                <div className="flex w-full flex-col items-start rounded-md border border-solid border-neutral-border bg-default-background px-8 py-8 shadow-sm overflow-y-auto h-[calc(100%-48px)]">
-                  <div className="w-full mb-12">
-                    {/* Enrollment Details Section */}
-                    <div className="flex w-full flex-col items-start">
-                      <h3 className="text-heading-4 font-heading-4 text-default-font mb-6">Enrollment Details</h3>
-                      <div className="grid grid-cols-2 gap-8 w-full">
-                        {/* Left Column */}
-                        <div className="flex flex-col gap-8">
-                          <div className="flex w-full items-start justify-between">
-                            <div className="flex flex-col">
-                              <span className="text-body-bold font-body-bold text-default-font flex items-center">Is Pre-Tax<FieldIndicator type='warn'/></span>
-                              <span className="text-sm text-neutral-500">Controls whether premiums are deducted before taxes</span>
+                        }
+                      >
+                        <div className="flex w-full grow shrink-0 basis-0 flex-col items-start gap-2 px-3 py-4">
+                          <div className="grid grid-cols-2 gap-8 w-full">
+                            {/* Required Regions */}
+                            <div className="flex w-full flex-col items-start gap-1">
+                              <span className="text-body-bold font-body-bold text-default-font mb-2 flex items-center">
+                                Required Regions<FieldIndicator type='warn'/>
+                              </span>
+                              <SubframeCore.DropdownMenu.Root>
+                                <SubframeCore.DropdownMenu.Trigger asChild={true}>
+                                  <Button
+                                    className="h-10 w-full flex-none text-left justify-between"
+                                    variant="neutral-secondary"
+                                    iconRight={<FeatherChevronDown />}
+                                  >
+                                    {requiredRegions.length > 0 
+                                      ? `${requiredRegions.length} states selected`
+                                      : "Select states"}
+                                  </Button>
+                                </SubframeCore.DropdownMenu.Trigger>
+                                <SubframeCore.DropdownMenu.Portal>
+                                  <SubframeCore.DropdownMenu.Content
+                                    side="bottom"
+                                    align="start"
+                                    sideOffset={4}
+                                    asChild={true}
+                                    className="w-full min-w-[200px]"
+                                  >
+                                    <div className="flex w-full flex-col gap-2 p-2 bg-white rounded-md border border-solid border-neutral-200 shadow-sm">
+                                      <TextField className="w-full">
+                                        <TextField.Input
+                                          placeholder="Search states..."
+                                          onChange={(e) => {
+                                            const searchTerm = e.target.value.toLowerCase();
+                                            const filteredStates = US_STATES.filter(state => 
+                                              state.toLowerCase().includes(searchTerm)
+                                            );
+                                            // You might want to store filtered states in state if needed
+                                          }}
+                                        />
+                                      </TextField>
+                                      <div className="flex max-h-[200px] w-full flex-col gap-1 overflow-y-auto">
+                                        {US_STATES.map((state) => (
+                                          <div
+                                            key={state}
+                                            className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 hover:bg-neutral-50"
+                                            onClick={() => {
+                                              setRequiredRegions(prev =>
+                                                prev.includes(state)
+                                                  ? prev.filter(s => s !== state)
+                                                  : [...prev, state]
+                                              );
+                                            }}
+                                          >
+                                            <div className={`flex h-4 w-4 items-center justify-center rounded border ${
+                                              requiredRegions.includes(state)
+                                                ? "border-brand-600 bg-brand-600"
+                                                : "border-neutral-200"
+                                            }`}>
+                                              {requiredRegions.includes(state) && (
+                                                <FeatherCheck className="h-3 w-3 text-white" />
+                                              )}
+                                            </div>
+                                            <span className="text-sm">{state}</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  </SubframeCore.DropdownMenu.Content>
+                                </SubframeCore.DropdownMenu.Portal>
+                              </SubframeCore.DropdownMenu.Root>
+                              {requiredRegions.length > 0 && (
+                                <div className="flex w-full flex-wrap gap-2 mt-2">
+                                  {requiredRegions.map((state) => (
+                                    <div
+                                      key={state}
+                                      className="flex items-center gap-1 rounded-md border border-solid border-brand-600 bg-brand-50 px-2 py-1"
+                                    >
+                                      <span className="text-sm">{state}</span>
+                                      <FeatherX
+                                        className="h-3 w-3 cursor-pointer"
+                                        onClick={() => {
+                                          setRequiredRegions(prev => prev.filter(s => s !== state));
+                                        }}
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                             </div>
-                            <Switch
-                              checked={isPreTax}
-                              onCheckedChange={setIsPreTax}
-                              defaultChecked={true}
-                            />
-                          </div>
-                          <div className="flex w-full items-start justify-between">
+                            {/* Required Subclasses */}
                             <div className="flex flex-col">
-                              <span className="text-body-bold font-body-bold text-default-font flex items-center">Partner Dependents Eligible<FieldIndicator type='ok'/></span>
-                              <span className="text-sm text-neutral-500">Currently only works with supplemental plans</span>
+                              <span className="text-body-bold font-body-bold text-default-font flex items-center">
+                                Required Subclasses<FieldIndicator type='lock'/>
+                              </span>
+                              <div className="flex flex-wrap gap-2 mt-2">
+                                {requiredSubclass ? (
+                                  <div className="flex items-center gap-1 rounded-md border border-solid border-neutral-200 bg-neutral-50 px-2 py-1">
+                                    <span className="text-sm">{requiredSubclass.replace(/_/g, ' ')}</span>
+                                  </div>
+                                ) : (
+                                  <span className="text-body font-body text-default-font">-</span>
+                                )}
+                              </div>
                             </div>
-                            <Switch
-                              checked={partnerDependentsEligible}
-                              onCheckedChange={setPartnerDependentsEligible}
-                              defaultChecked={true}
-                            />
-                          </div>
-                          <div className="flex w-full items-start justify-between">
-                            <div className="flex flex-col">
-                              <span className="text-body-bold font-body-bold text-default-font flex items-center">Child Dependents Eligible<FieldIndicator type='ok'/></span>
-                              <span className="text-sm text-neutral-500">Currently only works with supplemental plans</span>
-                            </div>
-                            <Switch
-                              checked={childDependentsEligible}
-                              onCheckedChange={setChildDependentsEligible}
-                              defaultChecked={true}
-                            />
-                          </div>
-                          <div className="flex w-full items-start justify-between">
-                            <div className="flex flex-col">
-                              <span className="text-body-bold font-body-bold text-default-font flex items-center">Required Enrollment<FieldIndicator type='warn'/></span>
-                              <span className="text-sm text-neutral-500">Controls whether the plan is automatically enrolled for members</span>
-                            </div>
-                            <Switch
-                              checked={requiredEnrollment}
-                              onCheckedChange={setRequiredEnrollment}
-                              defaultChecked={false}
-                            />
-                          </div>
-                        </div>
-
-                        {/* Right Column */}
-                        <div className="flex flex-col gap-8">
-                          <div className="flex w-full items-start justify-between">
-                            <div className="flex flex-col">
-                              <span className="text-body-bold font-body-bold text-default-font flex items-center">COBRA Eligible<FieldIndicator type='ok'/></span>
-                              <span className="text-sm text-neutral-500">Determines if the plan is eligible for COBRA continuation</span>
-                            </div>
-                            <Switch
-                              checked={cobraEligible}
-                              onCheckedChange={setCobraEligible}
-                              defaultChecked={false}
-                            />
-                          </div>
-                          <div className="flex w-full items-start justify-between">
-                            <div className="flex flex-col">
-                              <span className="text-body-bold font-body-bold text-default-font flex items-center">HSA Eligible<FieldIndicator type='warn'/></span>
-                              <span className="text-sm text-neutral-500">Determines if the plan can be paired with a Health Savings Account</span>
-                            </div>
-                            <Switch
-                              checked={hsaEligible}
-                              onCheckedChange={setHsaEligible}
-                              defaultChecked={false}
-                            />
-                          </div>
-                          <div className="flex w-full items-start justify-between">
-                            <div className="flex flex-col">
-                              <span className="text-body-bold font-body-bold text-default-font flex items-center">Requires Primary Care Provider<FieldIndicator type='ok'/></span>
-                              <span className="text-sm text-neutral-500">Determines if members must select a primary care provider</span>
-                            </div>
-                            <Switch
-                              checked={requiresPcp}
-                              onCheckedChange={setRequiresPcp}
-                              defaultChecked={false}
-                            />
-                          </div>
-                          <div className="flex w-full items-start justify-between">
-                            <div className="flex flex-col">
-                              <span className="text-body-bold font-body-bold text-default-font">Max Contributing Children</span>
-                              <span className="text-sm text-neutral-500">Maximum number of children that can be covered (optional)</span>
-                            </div>
-                            <TextField className="w-[120px]">
+                            <TextField
+                              label={<AttributeLabel label="Minimum Hours Worked" />}
+                            >
                               <TextField.Input
                                 type="number"
-                                placeholder="Enter maximum number"
-                                value={maxContributingChildren}
-                                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                                  const value = event.target.value;
-                                  if (value === '' || parseInt(value) >= 0) {
-                                    setMaxContributingChildren(value);
-                                  }
-                                }}
+                                placeholder="30"
+                                step="0.01"
+                                value={minimumHoursWorked}
+                                onChange={(e) => setMinimumHoursWorked(e.target.value)}
+                                className="h-10"
                               />
                             </TextField>
                           </div>
                         </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Eligibility Criteria Section */}
-                  <div className="w-full">
-                    <h3 className="text-heading-4 font-heading-4 text-default-font mb-6">Eligibility Criteria</h3>
-                    <div className="grid grid-cols-2 gap-8 w-full">
-                      {/* Required Regions */}
-                      <div className="flex w-full flex-col items-start gap-1">
-                        <span className="text-body-bold font-body-bold text-default-font mb-2 flex items-center">
-                          Required Regions<FieldIndicator type='warn'/>
-                        </span>
-                        <SubframeCore.DropdownMenu.Root>
-                          <SubframeCore.DropdownMenu.Trigger asChild={true}>
-                            <Button
-                              className="h-10 w-full flex-none text-left justify-between"
-                              variant="neutral-secondary"
-                              iconRight={<FeatherChevronDown />}
-                            >
-                              {requiredRegions.length > 0 
-                                ? `${requiredRegions.length} states selected`
-                                : "Select states"}
-                            </Button>
-                          </SubframeCore.DropdownMenu.Trigger>
-                          <SubframeCore.DropdownMenu.Portal>
-                            <SubframeCore.DropdownMenu.Content
-                              side="bottom"
-                              align="start"
-                              sideOffset={4}
-                              asChild={true}
-                              className="w-full min-w-[200px]"
-                            >
-                              <div className="flex w-full flex-col gap-2 p-2 bg-white rounded-md border border-solid border-neutral-200 shadow-sm">
-                                <TextField className="w-full">
-                                  <TextField.Input
-                                    placeholder="Search states..."
-                                    onChange={(e) => {
-                                      const searchTerm = e.target.value.toLowerCase();
-                                      const filteredStates = US_STATES.filter(state => 
-                                        state.toLowerCase().includes(searchTerm)
-                                      );
-                                      // You might want to store filtered states in state if needed
-                                    }}
-                                  />
-                                </TextField>
-                                <div className="flex max-h-[200px] w-full flex-col gap-1 overflow-y-auto">
-                                  {US_STATES.map((state) => (
-                                    <div
-                                      key={state}
-                                      className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 hover:bg-neutral-50"
-                                      onClick={() => {
-                                        setRequiredRegions(prev =>
-                                          prev.includes(state)
-                                            ? prev.filter(s => s !== state)
-                                            : [...prev, state]
-                                        );
-                                      }}
-                                    >
-                                      <div className={`flex h-4 w-4 items-center justify-center rounded border ${
-                                        requiredRegions.includes(state)
-                                          ? "border-brand-600 bg-brand-600"
-                                          : "border-neutral-200"
-                                      }`}>
-                                        {requiredRegions.includes(state) && (
-                                          <FeatherCheck className="h-3 w-3 text-white" />
-                                        )}
-                                      </div>
-                                      <span className="text-sm">{state}</span>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            </SubframeCore.DropdownMenu.Content>
-                          </SubframeCore.DropdownMenu.Portal>
-                        </SubframeCore.DropdownMenu.Root>
-                        {requiredRegions.length > 0 && (
-                          <div className="flex w-full flex-wrap gap-2 mt-2">
-                            {requiredRegions.map((state) => (
-                              <div
-                                key={state}
-                                className="flex items-center gap-1 rounded-md border border-solid border-brand-600 bg-brand-50 px-2 py-1"
-                              >
-                                <span className="text-sm">{state}</span>
-                                <FeatherX
-                                  className="h-3 w-3 cursor-pointer"
-                                  onClick={() => {
-                                    setRequiredRegions(prev => prev.filter(s => s !== state));
-                                  }}
-                                />
-                              </div>
-                            ))}
+                      </Accordion>
+                      {/* Waiting Period */}
+                      <Accordion defaultOpen className="w-full mb-8"
+                        trigger={
+                          <div className="flex w-full items-center gap-2 px-3 py-4">
+                            <span className="grow shrink-0 basis-0 text-body font-body text-default-font">Waiting Period</span>
+                            <Accordion.Chevron />
                           </div>
-                        )}
-                      </div>
-
-                      {/* Required Subclass */}
-                      <div className="flex w-full flex-col items-start gap-1">
-                        <span className="text-body-bold font-body-bold text-default-font mb-2 flex items-center">
-                          Required Subclass<FieldIndicator type='warn'/>
-                        </span>
-                        <SubframeCore.DropdownMenu.Root>
-                          <SubframeCore.DropdownMenu.Trigger asChild={true}>
-                            <Button
-                              className="h-10 w-full flex-none text-left justify-between"
-                              variant="neutral-secondary"
-                              iconRight={<FeatherChevronDown />}
-                            >
-                              {requiredSubclass ? requiredSubclass.replace(/_/g, " ") : "Select Required Subclass"}
-                            </Button>
-                          </SubframeCore.DropdownMenu.Trigger>
-                          <SubframeCore.DropdownMenu.Portal>
-                            <SubframeCore.DropdownMenu.Content
-                              side="bottom"
-                              align="start"
-                              sideOffset={4}
-                              asChild={true}
-                              className="w-full min-w-[200px]"
-                            >
-                              <div className="flex w-full flex-col gap-2 p-2 bg-white rounded-md border border-solid border-neutral-200 shadow-sm">
-                                <div className="flex max-h-[200px] w-full flex-col gap-1 overflow-y-auto">
-                                  {Object.values(Subclass).map((value) => (
-                                    <div
-                                      key={value}
-                                      className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 hover:bg-neutral-50"
-                                      onClick={() => setRequiredSubclass(value)}
-                                    >
-                                      <div className={`flex h-4 w-4 items-center justify-center rounded border ${
-                                        requiredSubclass === value
-                                          ? "border-brand-600 bg-brand-600"
-                                          : "border-neutral-200"
-                                      }`}>
-                                        {requiredSubclass === value && (
-                                          <FeatherCheck className="h-3 w-3 text-white" />
-                                        )}
-                                      </div>
-                                      <span className="text-sm">{value.replace(/_/g, " ")}</span>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            </SubframeCore.DropdownMenu.Content>
-                          </SubframeCore.DropdownMenu.Portal>
-                        </SubframeCore.DropdownMenu.Root>
-                      </div>
-
-                      {/* Minimum Hours Worked */}
-                      <TextField
-                        className="h-auto w-full flex-none"
-                        label={<span className="flex items-center text-body-bold font-body-bold text-default-font">Minimum Hours Worked<FieldIndicator type='warn'/></span>}
-                        helpText="Minimum number of hours required per week"
+                        }
                       >
-                        <TextField.Input
-                          type="number"
-                          placeholder="Enter minimum hours"
-                          value={minimumHoursWorked}
-                          onChange={(event: React.ChangeEvent<HTMLInputElement>) => setMinimumHoursWorked(event.target.value)}
-                        />
-                      </TextField>
+                        <div className="flex w-full grow shrink-0 basis-0 flex-col items-start gap-2 px-3 py-4">
+                          <div className="grid grid-cols-2 gap-8 w-full">
+                            <TextField
+                              label={<AttributeLabel label="Duration" />}
+                            >
+                              <TextField.Input
+                                type="number"
+                                placeholder="Enter duration"
+                                value={waitingPeriodDuration}
+                                onChange={(e) => setWaitingPeriodDuration(e.target.value)}
+                                className="h-10"
+                              />
+                            </TextField>
+                            <div className="flex flex-col">
+                              <span className="text-body-bold font-body-bold text-default-font flex items-center">
+                                Period<FieldIndicator type='warn'/>
+                              </span>
+                              <Select
+                                value={waitingPeriodType || ""}
+                                onValueChange={(val) => setWaitingPeriodType(val as WaitingPeriodUnit)}
+                                placeholder="Select Period"
+                                className="h-10 w-full"
+                              >
+                                {Object.values(WaitingPeriodUnit).map((value) => (
+                                  <Select.Item key={value} value={value}>
+                                    {getWaitingPeriodUnitDisplayName(value)}
+                                  </Select.Item>
+                                ))}
+                              </Select>
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-body-bold font-body-bold text-default-font flex items-center">
+                                Policy<FieldIndicator type='warn'/>
+                              </span>
+                              <Select
+                                value={waitingPeriodPolicy || ""}
+                                onValueChange={(val) => setWaitingPeriodPolicy(val as WaitingPeriodPolicy)}
+                                placeholder="Select Policy"
+                                className="h-10 w-full"
+                              >
+                                {Object.values(WaitingPeriodPolicy).map((value) => (
+                                  <Select.Item key={value} value={value}>
+                                    {getWaitingPeriodPolicyDisplayName(value)}
+                                  </Select.Item>
+                                ))}
+                              </Select>
+                            </div>
+                            <div className="flex w-full items-start justify-between">
+                              <div className="flex flex-col">
+                                <span className="text-body-bold font-body-bold text-default-font flex items-center">
+                                  Allow Coinciding Start<FieldIndicator type='warn'/>
+                                </span>
+                                <span className="text-sm text-neutral-500">Members can start on waiting period end</span>
+                              </div>
+                              <Switch
+                                checked={allowCoincidingStart}
+                                onCheckedChange={setAllowCoincidingStart}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </Accordion>
                     </div>
-                  </div>
-                </div>
+                  )}
+                </>
               )}
-              
-              {/* Premiums and Contributions Tab */}
-              {activeTab === "premiums" && (
-                <div className="w-full h-[calc(100%-48px)] overflow-y-auto">
-                  <PremiumWizard defaultTab="premiums" />
-                </div>
-              )}
-              {activeTab === "contributions" && (
-                <div className="w-full h-[calc(100%-48px)] overflow-y-auto">
-                  <PremiumWizard defaultTab="contributions" />
+              {/* Plan Document full width on its tab */}
+              {activeTab === "plan_document" && (
+                <div className="flex flex-col items-start gap-4 self-stretch rounded-md border border-solid border-neutral-border bg-neutral-50 px-6 py-6 w-full h-full">
+                  {/* ...existing Plan Document code... */}
                 </div>
               )}
             </div>
-            
-            {/* Right side Panel with fixed height - Only shown on Details tab */}
-            {activeTab === "details" && (
-              <div className="flex flex-col items-start gap-4 self-stretch rounded-md border border-solid border-neutral-border bg-neutral-50 px-6 py-6 w-1/2 h-full">
-                <div className="flex w-full items-center justify-between">
-                  <span className="text-heading-3 font-heading-3 text-default-font">
-                    Plan Document
-                  </span>
-                  <Button
-                    disabled={true}
-                    variant="neutral-secondary"
-                    icon={<FeatherDownload />}
-                    onClick={(event: React.MouseEvent<HTMLButtonElement>) => {}}
-                  >
-                    Download
-                  </Button>
-                </div>
-                <div className="flex w-full grow flex-col items-center justify-center gap-2 rounded-md border border-dashed border-neutral-border bg-default-background">
-                  <IconWithBackground
-                    variant="neutral"
-                    size="large"
-                    icon={<FeatherFileText />}
-                  />
-                  <span className="text-body-bold font-body-bold text-default-font">
-                    Drop your plan document here
-                  </span>
-                  <span className="text-body font-body text-subtext-color">
-                    or click to upload
-                  </span>
-                  <Button
-                    variant="neutral-secondary"
-                    size="small"
-                    icon={<FeatherUpload />}
-                    onClick={(event: React.MouseEvent<HTMLButtonElement>) => {}}
-                  >
-                    Upload PDF
-                  </Button>
-                </div>
-              </div>
-            )}
           </div>
         ) : (
           <div className="container max-w-none flex w-full grow shrink-0 basis-0 flex-col items-start gap-6 bg-default-background py-6 pb-12">

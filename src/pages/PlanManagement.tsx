@@ -3,7 +3,7 @@
 import React from "react";
 import { DefaultPageLayout } from "@/ui/layouts/DefaultPageLayout";
 import { Button } from "@/ui/components/Button";
-import { FeatherEdit2, FeatherGrid2X2, FeatherCheckCircle2, FeatherTrash, FeatherAlertTriangle, FeatherPlus, FeatherArrowRight } from "@subframe/core";
+import { FeatherEdit2, FeatherGrid2X2, FeatherCheckCircle2, FeatherTrash, FeatherAlertTriangle, FeatherPlus, FeatherArrowRight, FeatherLock, FeatherCheck } from "@subframe/core";
 import { IconButton } from "@/ui/components/IconButton";
 import { Tabs } from "@/ui/components/Tabs";
 
@@ -25,22 +25,22 @@ function PlanManagement({ onEdit }: { onEdit: () => void }) {
         <div className="flex w-full flex-col items-start gap-4 rounded-md border border-solid border-neutral-border bg-default-background px-6 py-6 relative">
           <div className="flex w-full items-center gap-4 border-b border-solid border-neutral-border pb-4">
             <span className="w-16 flex-none"></span>
-            <span className="w-48 flex-none text-body-bold font-body-bold text-default-font">
-              Plan Name*
+            <span className="w-48 flex-none text-body-bold font-body-bold text-default-font flex items-center">
+              Plan Name
             </span>
-            <span className="w-32 flex-none text-body-bold font-body-bold text-default-font">
-              Group Number*
+            <span className="w-32 flex-none text-body-bold font-body-bold text-default-font flex items-center">
+              Group Number
             </span>
-            <span className="w-32 flex-none text-body-bold font-body-bold text-default-font">
-              Carrier*
+            <span className="w-32 flex-none text-body-bold font-body-bold text-default-font flex items-center">
+              Carrier
             </span>
-            <span className="w-32 flex-none text-body-bold font-body-bold text-default-font">
-              Line of Coverage*
+            <span className="w-32 flex-none text-body-bold font-body-bold text-default-font flex items-center">
+              Line of Coverage
             </span>
-            <span className="w-32 flex-none text-body-bold font-body-bold text-default-font">
-              Premium Type*
+            <span className="w-32 flex-none text-body-bold font-body-bold text-default-font flex items-center">
+              Premium Type
             </span>
-            <span className="text-body-bold font-body-bold text-default-font grow">
+            <span className="text-body-bold font-body-bold text-default-font grow flex items-center">
               Policy Dates
             </span>
           </div>
